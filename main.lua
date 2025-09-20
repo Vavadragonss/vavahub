@@ -43,36 +43,141 @@ local MainSection = MainTab:CreateSection("Aimbot")
 local Button = MainTab:CreateButton({
    Name = "Aimbot (PRESS B TO TOGGLE)",
    Callback = function()
-   local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+   -- LocalScript - Functional Aimlock UI
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local camera = workspace.CurrentCamera
-local Workspace = workspace
+local Camera = workspace.CurrentCamera
 
-local aimEnabled = false
-local aimPart = "Head" -- Change target to "Head"
+-- Settings
+local AIMLOCK_KEY = Enum.KeyCode.B
+local AIMLOCK_ENABLED = false
+local LockPartOption = "Head" -- "Head" or "Body"
+local TeamCheck = true
+local WallCheck = true
 
-local function getNearestPlayer()
+-- GUI
+local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+gui.Name = "AimlockGui"
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 220, 0, 180)
+frame.Position = UDim2.new(0.5, -110, 0.5, -90)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Active, frame.Draggable = true, true
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,30)
+title.Text = "Aimlock"
+title.TextColor3 = Color3.new(1,1,1)
+title.BackgroundColor3 = Color3.fromRGB(50,50,50)
+title.Font = Enum.Font.SourceSansBold
+
+-- Close button
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0,30,0,24)
+closeBtn.Position = UDim2.new(1,-35,0,3)
+closeBtn.Text = "X"
+closeBtn.BackgroundColor3 = Color3.fromRGB(150,0,0)
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.MouseButton1Click:Connect(function()
+    AIMLOCK_ENABLED = false
+    gui:Destroy()
+end)
+
+-- Enable button
+local enableBtn = Instance.new("TextButton", frame)
+enableBtn.Size = UDim2.new(0, 100, 0, 30)
+enableBtn.Position = UDim2.new(0.5, -50, 0, 40)
+enableBtn.Text = "Enable"
+enableBtn.BackgroundColor3 = Color3.fromRGB(0,200,0)
+enableBtn.TextColor3 = Color3.new(1,1,1)
+enableBtn.Font = Enum.Font.SourceSansBold
+enableBtn.MouseButton1Click:Connect(function()
+    AIMLOCK_ENABLED = not AIMLOCK_ENABLED
+    enableBtn.Text = AIMLOCK_ENABLED and "Disable" or "Enable"
+    enableBtn.BackgroundColor3 = AIMLOCK_ENABLED and Color3.fromRGB(200,0,0) or Color3.fromRGB(0,200,0)
+end)
+
+-- Head/Body selection button
+local partBtn = Instance.new("TextButton", frame)
+partBtn.Size = UDim2.new(0,100,0,30)
+partBtn.Position = UDim2.new(0.5,-50,0,75)
+partBtn.Text = "Part: "..LockPartOption
+partBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+partBtn.TextColor3 = Color3.new(1,1,1)
+partBtn.Font = Enum.Font.SourceSans
+partBtn.MouseButton1Click:Connect(function()
+    LockPartOption = (LockPartOption == "Head") and "Body" or "Head"
+    partBtn.Text = "Part: "..LockPartOption
+end)
+
+-- TeamCheck button
+local teamBtn = Instance.new("TextButton", frame)
+teamBtn.Size = UDim2.new(0,100,0,30)
+teamBtn.Position = UDim2.new(0.5,-50,0,110)
+teamBtn.Text = "TeamCheck: "..tostring(TeamCheck)
+teamBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+teamBtn.TextColor3 = Color3.new(1,1,1)
+teamBtn.Font = Enum.Font.SourceSans
+teamBtn.MouseButton1Click:Connect(function()
+    TeamCheck = not TeamCheck
+    teamBtn.Text = "TeamCheck: "..tostring(TeamCheck)
+end)
+
+-- WallCheck button
+local wallBtn = Instance.new("TextButton", frame)
+wallBtn.Size = UDim2.new(0,100,0,30)
+wallBtn.Position = UDim2.new(0.5,-50,0,145)
+wallBtn.Text = "WallCheck: "..tostring(WallCheck)
+wallBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+wallBtn.TextColor3 = Color3.new(1,1,1)
+wallBtn.Font = Enum.Font.SourceSans
+wallBtn.MouseButton1Click:Connect(function()
+    WallCheck = not WallCheck
+    wallBtn.Text = "WallCheck: "..tostring(WallCheck)
+end)
+
+-- Keybind toggle
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == AIMLOCK_KEY then
+        AIMLOCK_ENABLED = not AIMLOCK_ENABLED
+        enableBtn.Text = AIMLOCK_ENABLED and "Disable" or "Enable"
+        enableBtn.BackgroundColor3 = AIMLOCK_ENABLED and Color3.fromRGB(200,0,0) or Color3.fromRGB(0,200,0)
+    end
+end)
+
+-- Check same team
+local function isSameTeam(player)
+    if not LocalPlayer.Team or not player.Team then return false end
+    return LocalPlayer.Team == player.Team
+end
+
+-- WallCheck raycast
+local function canSee(part)
+    if not WallCheck then return true end
+    local origin = Camera.CFrame.Position
+    local direction = part.Position - origin
+    local ray = Ray.new(origin, direction)
+    local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
+    return hit and hit:IsDescendantOf(part.Parent)
+end
+
+-- Find nearest valid target
+local function getNearestTarget()
+    local nearestDist = math.huge
     local nearestPlayer = nil
-    local shortestDistance = math.huge
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(aimPart) then
-            local charHead = player.Character:FindFirstChild(aimPart)
-            local distance = (charHead.Position - camera.CFrame.Position).Magnitude
-            -- Check line of sight
-            local origin = camera.CFrame.Position
-            local targetPos = charHead.Position
-            local direction = (targetPos - origin)
-            local raycastParams = RaycastParams.new()
-            raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-            local result = Workspace:Raycast(origin, direction, raycastParams)
-            
-            -- If no obstacle or the obstacle is the target, consider for aim
-            if not result or result.Instance:IsDescendantOf(player.Character) then
-                if distance < shortestDistance then
-                    shortestDistance = distance
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            if TeamCheck and isSameTeam(player) then continue end
+            local part = (LockPartOption == "Head") and player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
+            if part and canSee(part) then
+                local dist = (Camera.CFrame.Position - part.Position).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
                     nearestPlayer = player
                 end
             end
@@ -81,26 +186,20 @@ local function getNearestPlayer()
     return nearestPlayer
 end
 
-local function toggleAim()
-    aimEnabled = not aimEnabled
-end
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.B then
-        toggleAim()
-    end
-end)
-
+-- Aimlock loop
 RunService.RenderStepped:Connect(function()
-    if aimEnabled then
-        local targetPlayer = getNearestPlayer()
-        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild(aimPart) then
-            local targetPos = targetPlayer.Character[aimPart].Position
-            camera.CFrame = CFrame.new(camera.CFrame.Position, targetPos)
+    if AIMLOCK_ENABLED then
+        local target = getNearestTarget()
+        if target and target.Character then
+            local part = (LockPartOption == "Head") and target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
+            if part then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, part.Position)
+            end
         end
     end
 end)
+
+
    end,
 })
 
