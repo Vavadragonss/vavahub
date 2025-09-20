@@ -1112,4 +1112,10 @@ local Button = PlsDonateTab:CreateButton({
    end,
 })
 
+local Button = DrivingEmpireTab:CreateButton({
+   Name = "OP SCRIPT (Max Hub)",
+   Callback = function()
+			loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/e115b107e044a8cfc35b87ce573d558f.lua"))()
+   end,
+})
 
