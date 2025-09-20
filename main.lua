@@ -43,25 +43,26 @@ local MainSection = MainTab:CreateSection("Aimbot")
 local Button = MainTab:CreateButton({
    Name = "Aimbot (PRESS B TO TOGGLE)",
    Callback = function()
-   -- LocalScript - Persistent Aimlock UI
+  -- LocalScript - Persistent Aimlock UI with FriendCheck
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Friends = LocalPlayer:GetFriendsAsync() -- gets friends list
 
 -- Settings
 local AIMLOCK_KEY = Enum.KeyCode.B
 local AIMLOCK_ENABLED = false
 local LockPartOption = "Head" -- "Head" or "Body"
-local TeamCheck = true
+local FriendCheck = true -- new toggle
 local WallCheck = true
 
--- GUI (Parented to CoreGui for persistence)
+-- GUI
 local CoreGui = game:GetService("CoreGui")
 local gui = Instance.new("ScreenGui")
 gui.Name = "AimlockGui"
-gui.ResetOnSpawn = false  -- VERY IMPORTANT: prevents deletion on respawn
+gui.ResetOnSpawn = false
 gui.Parent = CoreGui
 
 local frame = Instance.new("Frame", gui)
@@ -117,17 +118,17 @@ partBtn.MouseButton1Click:Connect(function()
     partBtn.Text = "Part: "..LockPartOption
 end)
 
--- TeamCheck button
-local teamBtn = Instance.new("TextButton", frame)
-teamBtn.Size = UDim2.new(0,100,0,30)
-teamBtn.Position = UDim2.new(0.5,-50,0,110)
-teamBtn.Text = "TeamCheck: "..tostring(TeamCheck)
-teamBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-teamBtn.TextColor3 = Color3.new(1,1,1)
-teamBtn.Font = Enum.Font.SourceSans
-teamBtn.MouseButton1Click:Connect(function()
-    TeamCheck = not TeamCheck
-    teamBtn.Text = "TeamCheck: "..tostring(TeamCheck)
+-- FriendCheck button
+local friendBtn = Instance.new("TextButton", frame)
+friendBtn.Size = UDim2.new(0,100,0,30)
+friendBtn.Position = UDim2.new(0.5,-50,0,110)
+friendBtn.Text = "FriendCheck: "..tostring(FriendCheck)
+friendBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+friendBtn.TextColor3 = Color3.new(1,1,1)
+friendBtn.Font = Enum.Font.SourceSans
+friendBtn.MouseButton1Click:Connect(function()
+    FriendCheck = not FriendCheck
+    friendBtn.Text = "FriendCheck: "..tostring(FriendCheck)
 end)
 
 -- WallCheck button
@@ -153,10 +154,15 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
--- Team check helper
-local function isSameTeam(player)
-    if not LocalPlayer.Team or not player.Team then return false end
-    return LocalPlayer.Team == player.Team
+-- Friend check helper
+local function isFriend(player)
+    if not FriendCheck then return false end
+    for _, f in pairs(Friends:GetCurrentPage()) do
+        if f.Id == player.UserId then
+            return true
+        end
+    end
+    return false
 end
 
 -- WallCheck helper
@@ -175,7 +181,7 @@ local function getNearestTarget()
     local nearestPlayer = nil
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            if TeamCheck and isSameTeam(player) then continue end
+            if isFriend(player) then continue end
             local part = (LockPartOption == "Head") and player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
             if part and canSee(part) then
                 local dist = (Camera.CFrame.Position - part.Position).Magnitude
@@ -201,6 +207,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
 
 
    end,
