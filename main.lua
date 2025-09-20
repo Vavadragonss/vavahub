@@ -1093,3 +1093,12 @@ RunService.RenderStepped:Connect(function()
 end)
    end,
 })
+
+local InkTab = Window:CreateTab("Ink Games", nil) -- Title, Image
+
+local Button = InkTab:CreateButton({
+   Name = "OP SCRIPT",
+   Callback = function()
+			loadstring(game:HttpGet("https://pastebin.com/raw/4UW8z7zG"))()
+   end,
+})
