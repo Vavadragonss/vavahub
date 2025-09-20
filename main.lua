@@ -1002,8 +1002,6 @@ local PaintballTab = Window:CreateTab("Big Paintball 2", nil) -- Title, Image
 local Button = PaintballTab:CreateButton({
    Name = "Teleport All",
    Callback = function()
-			-- LocalScript
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -1085,6 +1083,5 @@ RunService.RenderStepped:Connect(function()
         teleportPlayers()
     end
 end)
-
    end,
 })
