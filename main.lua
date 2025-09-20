@@ -43,7 +43,7 @@ local MainSection = MainTab:CreateSection("Aimbot")
 local Button = MainTab:CreateButton({
    Name = "Aimbot (PRESS B TO TOGGLE)",
    Callback = function()
-   -- LocalScript - Aimlock UI with persistence on death
+   -- LocalScript - Persistent Aimlock UI
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -57,9 +57,12 @@ local LockPartOption = "Head" -- "Head" or "Body"
 local TeamCheck = true
 local WallCheck = true
 
--- GUI
-local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+-- GUI (Parented to CoreGui for persistence)
+local CoreGui = game:GetService("CoreGui")
+local gui = Instance.new("ScreenGui")
 gui.Name = "AimlockGui"
+gui.ResetOnSpawn = false  -- VERY IMPORTANT: prevents deletion on respawn
+gui.Parent = CoreGui
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 220, 0, 180)
@@ -187,30 +190,18 @@ local function getNearestTarget()
 end
 
 -- Aimlock loop
-local function aimlockLoop()
-    RunService.RenderStepped:Connect(function()
-        if AIMLOCK_ENABLED then
-            local target = getNearestTarget()
-            if target and target.Character then
-                local part = (LockPartOption == "Head") and target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
-                if part then
-                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, part.Position)
-                end
+RunService.RenderStepped:Connect(function()
+    if AIMLOCK_ENABLED then
+        local target = getNearestTarget()
+        if target and target.Character then
+            local part = (LockPartOption == "Head") and target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
+            if part then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, part.Position)
             end
         end
-    end)
-end
-aimlockLoop()
-
--- Reapply aimlock on respawn
-LocalPlayer.CharacterAdded:Connect(function()
-    Camera = workspace.CurrentCamera
-    -- Keep aimlock enabled if it was
-    if AIMLOCK_ENABLED then
-        task.wait(1) -- allow character to load
-        aimlockLoop()
     end
 end)
+
 
    end,
 })
