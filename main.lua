@@ -996,3 +996,95 @@ end)
 
    end,
 })
+
+local PaintballTab = Window:CreateTab("Big Paintball 2", nil) -- Title, Image
+
+local Button = Tab:CreateButton({
+   Name = "Teleport All",
+   Callback = function()
+			-- LocalScript
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+local TeleportEnabled = false
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "PlayerMagnetGui"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 220, 0, 140)
+frame.Position = UDim2.new(0.5, -110, 0.5, -70)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Active = true
+frame.Draggable = true
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,30)
+title.Text = "Player Magnet"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.BackgroundColor3 = Color3.fromRGB(50,50,150)
+title.Font = Enum.Font.SourceSansBold
+
+-- Close button
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0,30,0,24)
+closeBtn.Position = UDim2.new(1,-35,0,3)
+closeBtn.Text = "X"
+closeBtn.BackgroundColor3 = Color3.fromRGB(150,0,0)
+closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+closeBtn.MouseButton1Click:Connect(function()
+    TeleportEnabled = false
+    gui:Destroy()
+end)
+
+-- Toggle button
+local toggleBtn = Instance.new("TextButton", frame)
+toggleBtn.Size = UDim2.new(0,150,0,50)
+toggleBtn.Position = UDim2.new(0.5,-75,0,50)
+toggleBtn.Text = "Teleport Players: OFF"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0,200,100)
+toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.MouseButton1Click:Connect(function()
+    TeleportEnabled = not TeleportEnabled
+    toggleBtn.Text = "Teleport Players: "..(TeleportEnabled and "ON" or "OFF")
+end)
+
+-- B key toggle
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.B then
+        TeleportEnabled = not TeleportEnabled
+        toggleBtn.Text = "Teleport Players: "..(TeleportEnabled and "ON" or "OFF")
+    end
+end)
+
+-- Function: teleport all other players in front of you
+local function teleportPlayers()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local forward = hrp.CFrame.LookVector * 5 -- 5 studs in front
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(hrp.Position + forward + Vector3.new(0,3,0))
+        end
+    end
+end
+
+-- Loop to continuously teleport players while enabled
+RunService.RenderStepped:Connect(function()
+    if TeleportEnabled then
+        teleportPlayers()
+    end
+end)
+
+   end,
+})
