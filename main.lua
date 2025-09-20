@@ -1102,3 +1102,14 @@ local Button = InkTab:CreateButton({
 			loadstring(game:HttpGet("https://pastebin.com/raw/4UW8z7zG"))()
    end,
 })
+
+local PlsDonateTab = Window:CreateTab("PLS DONATE", nil) -- Title, Image
+
+local Button = PlsDonateTab:CreateButton({
+   Name = "OP SCRIPT",
+   Callback = function()
+		loadstring(game:HttpGet('https://raw.githubusercontent.com/CF-Trail/tzechco-PlsDonateAutofarmBackup/main/old.lua'))()
+   end,
+})
+
+
