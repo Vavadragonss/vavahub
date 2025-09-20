@@ -49,14 +49,56 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local Friends = LocalPlayer:GetFriendsAsync() -- gets friends list
 
 -- Settings
 local AIMLOCK_KEY = Enum.KeyCode.B
 local AIMLOCK_ENABLED = false
 local LockPartOption = "Head" -- "Head" or "Body"
-local FriendCheck = true -- new toggle
+local FriendCheck = true
 local WallCheck = true
+
+-- Manual friend list (replace with your friends' UserIds)
+local FriendIds = {
+    [4652932604] = true,
+    [2482480667] = true,
+	[4792065404] = true,
+    [8238694581] = true,
+    [4826160344] = true,
+	[1604362429] = true,
+}
+
+-- Helper functions
+local function isFriend(player)
+    return FriendCheck and FriendIds[player.UserId]
+end
+
+local function canSee(part)
+    if not WallCheck then return true end
+    local origin = Camera.CFrame.Position
+    local direction = part.Position - origin
+    local ray = Ray.new(origin, direction)
+    local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
+    return hit and hit:IsDescendantOf(part.Parent)
+end
+
+local function getNearestTarget()
+    local nearestDist = math.huge
+    local nearestPlayer = nil
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            if isFriend(player) then continue end
+            local part = (LockPartOption == "Head") and player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
+            if part and canSee(part) then
+                local dist = (Camera.CFrame.Position - part.Position).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
+                    nearestPlayer = player
+                end
+            end
+        end
+    end
+    return nearestPlayer
+end
 
 -- GUI
 local CoreGui = game:GetService("CoreGui")
@@ -118,7 +160,7 @@ partBtn.MouseButton1Click:Connect(function()
     partBtn.Text = "Part: "..LockPartOption
 end)
 
--- FriendCheck button
+-- FriendCheck toggle button
 local friendBtn = Instance.new("TextButton", frame)
 friendBtn.Size = UDim2.new(0,100,0,30)
 friendBtn.Position = UDim2.new(0.5,-50,0,110)
@@ -153,47 +195,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
         enableBtn.BackgroundColor3 = AIMLOCK_ENABLED and Color3.fromRGB(200,0,0) or Color3.fromRGB(0,200,0)
     end
 end)
-
--- Friend check helper
-local function isFriend(player)
-    if not FriendCheck then return false end
-    for _, f in pairs(Friends:GetCurrentPage()) do
-        if f.Id == player.UserId then
-            return true
-        end
-    end
-    return false
-end
-
--- WallCheck helper
-local function canSee(part)
-    if not WallCheck then return true end
-    local origin = Camera.CFrame.Position
-    local direction = part.Position - origin
-    local ray = Ray.new(origin, direction)
-    local hit = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
-    return hit and hit:IsDescendantOf(part.Parent)
-end
-
--- Get nearest target
-local function getNearestTarget()
-    local nearestDist = math.huge
-    local nearestPlayer = nil
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            if isFriend(player) then continue end
-            local part = (LockPartOption == "Head") and player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
-            if part and canSee(part) then
-                local dist = (Camera.CFrame.Position - part.Position).Magnitude
-                if dist < nearestDist then
-                    nearestDist = dist
-                    nearestPlayer = player
-                end
-            end
-        end
-    end
-    return nearestPlayer
-end
 
 -- Aimlock loop
 RunService.RenderStepped:Connect(function()
