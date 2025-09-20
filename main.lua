@@ -999,7 +999,7 @@ end)
 
 local PaintballTab = Window:CreateTab("Big Paintball 2", nil) -- Title, Image
 
-local Button = Tab:CreateButton({
+local Button = PaintballTab:CreateButton({
    Name = "Teleport All",
    Callback = function()
 			-- LocalScript
