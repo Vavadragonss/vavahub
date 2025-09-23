@@ -43,7 +43,7 @@ local MainSection = MainTab:CreateSection("Aimbot")
 local Button = MainTab:CreateButton({
    Name = "Aimbot (PRESS B TO TOGGLE)",
    Callback = function()
-  -- LocalScript - Persistent Aimlock UI with FriendCheck
+-- LocalScript - Persistent Aimlock UI with FriendCheck + No Dead Lock
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -61,13 +61,13 @@ local WallCheck = true
 local FriendIds = {
     [4652932604] = true,
     [2482480667] = true,
-	[4792065404] = true,
+    [4792065404] = true,
     [8238694581] = true,
     [4826160344] = true,
-	[1604362429] = true,
+    [1604362429] = true,
 }
 
--- Helper functions
+-- Helpers
 local function isFriend(player)
     return FriendCheck and FriendIds[player.UserId]
 end
@@ -81,22 +81,35 @@ local function canSee(part)
     return hit and hit:IsDescendantOf(part.Parent)
 end
 
+-- Get nearest valid target
 local function getNearestTarget()
     local nearestDist = math.huge
     local nearestPlayer = nil
+
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            if isFriend(player) then continue end
-            local part = (LockPartOption == "Head") and player.Character:FindFirstChild("Head") or player.Character:FindFirstChild("HumanoidRootPart")
-            if part and canSee(part) then
-                local dist = (Camera.CFrame.Position - part.Position).Magnitude
-                if dist < nearestDist then
-                    nearestDist = dist
-                    nearestPlayer = player
+        if player ~= LocalPlayer and player.Character then
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+            
+            -- Must have HRP + Humanoid and not be dead
+            if hrp and hum and hum.Health > 0 then
+                if isFriend(player) then continue end
+                
+                local part = (LockPartOption == "Head")
+                    and player.Character:FindFirstChild("Head")
+                    or hrp
+
+                if part and canSee(part) then
+                    local dist = (Camera.CFrame.Position - part.Position).Magnitude
+                    if dist < nearestDist then
+                        nearestDist = dist
+                        nearestPlayer = player
+                    end
                 end
             end
         end
     end
+
     return nearestPlayer
 end
 
@@ -173,7 +186,7 @@ friendBtn.MouseButton1Click:Connect(function()
     friendBtn.Text = "FriendCheck: "..tostring(FriendCheck)
 end)
 
--- WallCheck button
+-- WallCheck toggle button
 local wallBtn = Instance.new("TextButton", frame)
 wallBtn.Size = UDim2.new(0,100,0,30)
 wallBtn.Position = UDim2.new(0.5,-50,0,145)
@@ -201,13 +214,17 @@ RunService.RenderStepped:Connect(function()
     if AIMLOCK_ENABLED then
         local target = getNearestTarget()
         if target and target.Character then
-            local part = (LockPartOption == "Head") and target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
+            local part = (LockPartOption == "Head")
+                and target.Character:FindFirstChild("Head")
+                or target.Character:FindFirstChild("HumanoidRootPart")
+
             if part then
                 Camera.CFrame = CFrame.new(Camera.CFrame.Position, part.Position)
             end
         end
     end
 end)
+
 
 
 
