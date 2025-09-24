@@ -65,7 +65,9 @@ local FriendIds = {
     [8238694581] = true,
     [4826160344] = true,
     [1604362429] = true,
-	[9342212559] = true,
+	[9342212559] = true, --ben alt
+	[5007463912] = true, --jensen sister
+	[2004490548] = true, --jensen alt
 }
 
 -- Helpers
