@@ -65,6 +65,7 @@ local FriendIds = {
     [8238694581] = true,
     [4826160344] = true,
     [1604362429] = true,
+	[9342212559] = true,
 }
 
 -- Helpers
