@@ -1139,3 +1139,11 @@ local Button = DrivingEmpireTab:CreateButton({
    end,
 })
 
+local PVBTab = Window:CreateTab("Plants VS Brainrots", nil) -- Title, Image
+
+local Button = PVBTab:CreateButton({
+   Name = "OP SCRIPT",
+   Callback = function()
+  loadstring(game:HttpGet("https://raw.githubusercontent.com/mynamewendel-ctrl/Blessed-Hub-X-/refs/heads/main/Plants-Vs-Brainrots.lua"))()   end,
+})
+
