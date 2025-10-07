@@ -340,6 +340,12 @@ local Button = HubsTab:CreateButton({
 })
 
 local Button = HubsTab:CreateButton({
+   Name = "Free Private Server (MADE BY VAVADRAGONS)",
+   Callback = function()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/veil0x14/LocalScripts/refs/heads/main/pg.lua"))()   end,
+})
+
+local Button = HubsTab:CreateButton({
    Name = "Fling UI (made by me in 2 mins)",
    Callback = function()
 		-- Paste into Studio Command Bar while playtesting
@@ -1147,3 +1153,10 @@ local Button = PVBTab:CreateButton({
   loadstring(game:HttpGet("https://raw.githubusercontent.com/mynamewendel-ctrl/Blessed-Hub-X-/refs/heads/main/Plants-Vs-Brainrots.lua"))()   end,
 })
 
+local SABTab = Window:CreateTab("Steal A Brainrot", nil) -- Title, Image
+
+local Button = SABTab:CreateButton({
+   Name = "Nothing Right Now",
+   Callback = function()
+			print("Unavalible")
+})
