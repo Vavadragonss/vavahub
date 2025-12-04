@@ -1,0 +1,443 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+    local Window = Library.CreateLib("Max Hub | Weak Legacy 2", "DarkTheme")
+    local Player = Window:NewTab("Player")
+    local PlayerSection = Player:NewSection("Player")
+    local Main = Window:NewTab("Main")
+    local MainSection = Main:NewSection("Main")
+    local Teleports = Window:NewTab("Teleports")
+    local TeleportsSection = Teleports:NewSection("Locations")
+    local Teleports2 = Window:NewTab("Teleports 2")
+    local TeleportsSection2 = Teleports2:NewSection("Locations")
+    local ChristmasEvent = Window:NewTab("Christmas Event")
+    local ChristmasEventSection = ChristmasEvent:NewSection("Christmas Event")
+    local Visual = Window:NewTab("Visuals")
+    local VisualSection = Visual:NewSection("Visual Stuff")
+    local RunService = game:GetService("RunService")
+local player = game.Players.LocalPlayer
+
+local currentSpeed = 16  -- default
+
+MainSection:NewButton("Support Max Hub", "Sends message in chat to support Max Hub", function()
+    local TextChatService = cloneref(game:GetService("TextChatService"))
+local isLegacyChat = TextChatService.ChatVersion == Enum.ChatVersion.LegacyChatService
+local function SendMessage(message)
+    message = tostring(message)
+
+    if not isLegacyChat then
+        TextChatService.TextChannels.RBXGeneral:SendAsync(message)
+    else
+        ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
+    end
+end
+
+SendMessage("I'm using Max Hub! Join gg FYc9cRG34V!")
+end)
+
+PlayerSection:NewButton("Infinite Jump", "Lets you jump infnite times", function()
+local InfiniteJumpEnabled = true
+game:GetService("UserInputService").JumpRequest:connect(function()
+	if InfiniteJumpEnabled then
+		game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass'Humanoid':ChangeState("Jumping")
+	end
+end)
+end)
+
+PlayerSection:NewButton("Noclip (not a toggle)", "Lets you noclip", function()
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+local Noclip = nil
+local Clip = nil
+
+function noclip()
+	Clip = false
+	local function Nocl()
+		if Clip == false and game.Players.LocalPlayer.Character ~= nil then
+			for _,v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+				if v:IsA('BasePart') and v.CanCollide and v.Name ~= floatName then
+					v.CanCollide = false
+				end
+			end
+		end
+		wait(0.21) -- basic optimization
+	end
+	Noclip = game:GetService('RunService').Stepped:Connect(Nocl)
+end
+
+function clip()
+	if Noclip then Noclip:Disconnect() end
+	Clip = true
+end
+
+noclip() -- to toggle noclip() and clip()
+end)
+
+MainSection:NewButton("Auto Breathing", "no shit", function()
+-- Conceptual Code for an Executor UI
+-- NOTE: The exact function names (e.g., 'CreateWindow', 'CreateToggle', 'simulatekey') 
+-- WILL LIKELY NEED TO BE CHANGED to match the API of your specific Roblox executor.
+
+local is_g_spamming = false
+
+-- This is the main loop that will run as long as the toggle is active
+local function spam_g_key()
+    while is_g_spamming do
+        -- Simulate the 'G' key press
+        -- You may need to change 'simulatekey' to whatever function your executor uses.
+        -- Common alternatives: keypress("G"), keydown("G"), firekey("G")
+        
+        if type(simulatekey) == "function" then
+            simulatekey("G", "press")
+        else
+            -- Fallback for executors without a simple simulatekey
+            -- Change this to your executor's keypress function
+            print("Warning: 'simulatekey' function not found. Place your actual keypress code here.")
+        end
+
+        -- Wait a short duration before simulating the next press. 
+        -- Too short a delay can cause issues or lag.
+        -- We'll use 0.1 seconds (100 milliseconds) as a reasonable starting point.
+        wait(0.1) 
+    end
+end
+
+-- 1. Create the main window for the UI (if your executor supports it)
+-- Replace the functions below with your executor's UI creation functions.
+local main_window = nil
+if type(CreateWindow) == "function" then
+    main_window = CreateWindow("Key Press Automation")
+else
+    -- Fallback message if UI creation is not supported or function name is wrong
+    print("UI Creation function (CreateWindow) not found. The script can still run without a visible UI.")
+end
+
+-- 2. Create the toggle button
+if main_window and type(main_window.CreateToggle) == "function" then
+    main_window:CreateToggle({
+        Text = "Auto 'G' Key Press",
+        Default = false, -- Starts off
+        Callback = function(value)
+            is_g_spamming = value
+            if is_g_spamming then
+                -- Start the key spamming loop in a new thread
+                task.spawn(spam_g_key)
+            end
+        end
+    })
+else
+    -- Simple script if UI is not an option
+    print("Warning: Toggle creation function not found. You will need to manually toggle 'is_g_spamming'.")
+end
+end)
+
+     MainSection:NewButton("ESP", "Shows all people", function()
+--============================--
+-- Developer ESP (No UI, With Distance + Name)
+--============================--
+
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+local charactersFolder = workspace:WaitForChild("CharactersAndNPCs")
+local espObjects = {}
+
+-- Cleanup old ESP if script is run again
+for _, obj in ipairs(espObjects) do
+    if obj and obj.Parent then
+        obj:Destroy()
+    end
+end
+espObjects = {}
+
+local function addESP(model)
+    if not model:IsA("Model") then return end
+
+    local humanoid = model:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    ---------------------------------------------------
+    -- Highlight
+    ---------------------------------------------------
+    local highlight = Instance.new("Highlight")
+    highlight.Adornee = model
+    highlight.FillColor = Color3.fromRGB(0, 255, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.Parent = model
+    table.insert(espObjects, highlight)
+
+    ---------------------------------------------------
+    -- Billboard for name, health, and distance
+    ---------------------------------------------------
+    local head = model:FindFirstChild("Head") or model:FindFirstChildWhichIsA("BasePart")
+    if not head then return end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 150, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 4, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Adornee = head
+    billboard.Parent = model
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextStrokeTransparency = 0
+    label.TextScaled = true
+    label.Parent = billboard
+
+    -- Initial text
+    label.Text = model.Name .. " | HP: " .. math.floor(humanoid.Health)
+
+    -- Update health
+    humanoid.HealthChanged:Connect(function()
+        label.Text = model.Name .. " | HP: " .. math.floor(humanoid.Health)
+    end)
+
+    ---------------------------------------------------
+    -- Distance updater loop
+    ---------------------------------------------------
+    task.spawn(function()
+        while billboard.Parent do
+            task.wait(0.1)
+
+            local char = localPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp then
+                label.Text = model.Name .. " | HP: " .. math.floor(humanoid.Health) .. " | Dist: --"
+                continue
+            end
+
+            local distance = (head.Position - hrp.Position).Magnitude
+            label.Text = model.Name .. " | HP: " .. math.floor(humanoid.Health) .. " | Dist: " .. math.floor(distance)
+        end
+    end)
+
+    table.insert(espObjects, billboard)
+end
+
+---------------------------------------------------
+-- Add ESP to existing models
+---------------------------------------------------
+for _, model in ipairs(charactersFolder:GetChildren()) do
+    addESP(model)
+end
+
+---------------------------------------------------
+-- Auto-ESP new models
+---------------------------------------------------
+charactersFolder.ChildAdded:Connect(function(child)
+    task.wait(0.1)
+    addESP(child)
+end)
+
+
+
+
+
+end)
+
+    VisualSection:NewButton("All stuff", "Gives all items", function()
+    local Players = game:GetService("Players")
+
+local function updatePlayer(player)
+    local inventory = player:WaitForChild("Inventory", 5)
+    if not inventory then
+        warn("Inventory not found for player:", player.Name)
+        return
+    end
+
+    -- Loop through all children in Inventory
+    for _, item in ipairs(inventory:GetChildren()) do
+        if item:IsA("IntValue") or item:IsA("NumberValue") then
+            item.Value = 100
+        else
+            warn("Skipped non-number value in Inventory:", item.Name)
+        end
+    end
+end
+
+-- Update all players currently in the game
+for _, player in ipairs(Players:GetPlayers()) do
+    updatePlayer(player)
+end
+
+-- Update players who join later
+Players.PlayerAdded:Connect(updatePlayer)
+
+
+
+end)
+
+    VisualSection:NewButton("100 Million Max Breathing", "Gives 100M Max breathing", function()
+    local Players = game:GetService("Players")
+
+local function updatePlayer(player)
+    local breathingSettings = player:WaitForChild("BreathingSettings", 5)
+    if breathingSettings then
+        local maxBreathing = breathingSettings:FindFirstChild("MaxBreathing")
+        if maxBreathing then
+            maxBreathing.Value = 100000000
+        else
+            warn("MaxBreathing value not found for player:", player.Name)
+        end
+    else
+        warn("BreathingSettings not found for player:", player.Name)
+    end
+end
+
+-- Update all current players
+for _, player in ipairs(Players:GetPlayers()) do
+    updatePlayer(player)
+end
+
+-- Update players who join later
+Players.PlayerAdded:Connect(updatePlayer)
+
+end)
+
+    VisualSection:NewButton("Max Level", "Gives level 1650", function()
+    local Players = game:GetService("Players")
+
+local function updatePlayer(player)
+    local dataFolder = player:WaitForChild("Data", 5)
+    if dataFolder then
+        local levels = dataFolder:FindFirstChild("Levels")
+        if levels then
+            levels.Value = 1650
+        else
+            warn("Levels value not found for player:", player.Name)
+        end
+    else
+        warn("Data folder not found for player:", player.Name)
+    end
+end
+
+-- Update all players currently in the game
+for _, player in ipairs(Players:GetPlayers()) do
+    updatePlayer(player)
+end
+
+-- Update players who join later
+Players.PlayerAdded:Connect(updatePlayer)
+
+
+end)
+
+
+
+    ChristmasEventSection:NewButton("Gift Teleport", "Teleports you to a random gift in the Christmas event", function()
+   local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+local giftsFolder = workspace:WaitForChild("Map"):WaitForChild("Gifts")
+
+-- Collect all parts inside the folder
+local parts = {}
+for _, obj in ipairs(giftsFolder:GetDescendants()) do
+	if obj:IsA("BasePart") then
+		table.insert(parts, obj)
+	end
+end
+
+-- Teleport to a random one
+if #parts > 0 then
+	local randomPart = parts[math.random(1, #parts)]
+	hrp.CFrame = randomPart.CFrame + Vector3.new(0, 3, 0) -- slightly above it
+else
+	warn("No parts found inside workspace.Map.Gifts")
+end
+
+end)
+
+    PlayerSection:NewSlider("Walkspeed", "Changes the walkspeed", 250, 16, function(v)
+            currentSpeed = v
+end)
+
+-- Re-apply walkspeed every frame (fixes animation overrides)
+RunService.RenderStepped:Connect(function()
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildWhichIsA("Humanoid")
+        if hum and hum.WalkSpeed ~= currentSpeed then
+            hum.WalkSpeed = currentSpeed
+        end
+    end
+end)
+ 
+    PlayerSection:NewSlider("Jumppower", "Changes the jumppower", 250, 50, function(v)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = v
+    end)
+
+    TeleportsSection:NewButton("Danger Zone", "Teleports you to Danger Zone", function()
+   local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+
+root.CFrame = CFrame.new(-70.89, 9.32, -1036.58)
+
+end)
+
+TeleportsSection:NewButton("Demon Cave", "Teleports you to Demon Cave", function()
+    local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+
+root.CFrame = CFrame.new(1612.00, 12.14, -1193.33)
+end)
+
+TeleportsSection:NewButton("Demon Slayer Corp", "Teleports you to Demon Slayer Corp", function()
+    local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+
+root.CFrame = CFrame.new(-861.64, 9.32, -596.07)
+end)
+
+TeleportsSection:NewButton("Final Selection", "Teleports you to Final Selection", function()
+    local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+
+root.CFrame = CFrame.new(-644.33, 9.45, 927.87)
+end)
+
+TeleportsSection:NewButton("Little Village", "Teleports you to Little Village", function()
+    local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+
+root.CFrame = CFrame.new(-468.16, 53.92, 276.72)
+end)
+
+TeleportsSection:NewButton("Main Village", "Teleports you to Main Village", function()
+    local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+
+root.CFrame = CFrame.new(607.50, 9.40, 675.61)
+end)
+
+TeleportsSection2:NewButton("Mugen Train Station", "Teleports you to Mugen Train Station", function()
+    local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+
+root.CFrame = CFrame.new(923.81, 9.33, -2049.97)
+end)
+
+TeleportsSection2:NewButton("Winter Village", "Teleports you to Winter Village", function()
+    local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local root = char:WaitForChild("HumanoidRootPart")
+
+root.CFrame = CFrame.new(1001.21, 9.31, -1527.98)
+end)
+
+
+
+
+
+
+
+    
