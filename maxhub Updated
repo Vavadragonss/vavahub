@@ -15,22 +15,387 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHept
     local RunService = game:GetService("RunService")
 local player = game.Players.LocalPlayer
 
+
+
 local currentSpeed = 16  -- default
 
-MainSection:NewButton("Support Max Hub", "Sends message in chat to support Max Hub", function()
-    local TextChatService = cloneref(game:GetService("TextChatService"))
-local isLegacyChat = TextChatService.ChatVersion == Enum.ChatVersion.LegacyChatService
-local function SendMessage(message)
-    message = tostring(message)
+MainSection:NewButton("Anti AFK", "prevents afk (not made by vavadragons)", function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hassanxzayn-lua/Anti-afk/main/antiafkbyhassanxzyn"))();
+end)
 
-    if not isLegacyChat then
-        TextChatService.TextChannels.RBXGeneral:SendAsync(message)
+
+MainSection:NewButton("Autoclicker", "Autoclicker", function()
+loadstring(game:HttpGetAsync('https://pastebin.com/raw/WgkcDYUs'))()
+end)
+
+MainSection:NewButton("Autofarm Custom", "Autofarm UI", function()
+--========================================================--
+-- Developer Autofarm UI (Persistent Selections + Single Target)
+-- With Auto-Equip Hotbar Slot 1 on Respawn
+--========================================================--
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local CharacterFolder = workspace:WaitForChild("CharactersAndNPCs")
+
+------------------------------------------------------------
+-- AUTO-EQUIP HOTBAR SLOT 1 ON RESPAWN
+------------------------------------------------------------
+local function equipHotbarSlot1()
+    local char = LocalPlayer.Character
+    if not char then return end
+
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    local backpack = LocalPlayer:WaitForChild("Backpack")
+
+    -- Wait until Backpack has at least one tool
+    repeat task.wait() until #backpack:GetChildren() > 0
+
+    local hotbarTool = nil
+    for _, t in ipairs(backpack:GetChildren()) do
+        if t:IsA("Tool") then
+            hotbarTool = t
+            break
+        end
+    end
+
+    if hotbarTool then
+        hum:EquipTool(hotbarTool)
+        print("Equipped hotbar slot 1 tool:", hotbarTool.Name)
     else
-        ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
+        warn("No tool found in hotbar slot 1!")
     end
 end
 
-SendMessage("I'm using Max Hub! Join gg FYc9cRG34V!")
+-- Auto-equip on respawn
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(1) -- wait for Backpack + Humanoid to load
+    equipHotbarSlot1()
+end)
+
+-- Equip immediately if character exists
+if LocalPlayer.Character then
+    task.spawn(equipHotbarSlot1)
+end
+
+------------------------------------------------------------
+-- Remove old UI if script is rerun
+------------------------------------------------------------
+local old = LocalPlayer.PlayerGui:FindFirstChild("DevAutoFarmUI")
+if old then old:Destroy() end
+
+------------------------------------------------------------
+-- UI Creation
+------------------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "DevAutoFarmUI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer.PlayerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 260)
+frame.Position = UDim2.new(0.3, 0, 0.2, 0)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -40, 0, 30)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Autofarm Console"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.TextScaled = true
+title.Parent = frame
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -35, 0, 0)
+close.BackgroundColor3 = Color3.fromRGB(150,0,0)
+close.Text = "X"
+close.TextColor3 = Color3.fromRGB(255,255,255)
+close.Parent = frame
+
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+------------------------------------------------------------
+-- DROPDOWN (Persistent Selections)
+------------------------------------------------------------
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(1, -20, 0, 25)
+label.Position = UDim2.new(0, 10, 0, 40)
+label.BackgroundTransparency = 1
+label.Text = "NPC Types:"
+label.TextColor3 = Color3.fromRGB(255,255,255)
+label.TextScaled = true
+label.Parent = frame
+
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1, -20, 0, 130)
+scroll.Position = UDim2.new(0, 10, 0, 70)
+scroll.BackgroundColor3 = Color3.fromRGB(35,35,35)
+scroll.ScrollBarThickness = 6
+scroll.CanvasSize = UDim2.new(0,0,0,0)
+scroll.Parent = frame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Parent = scroll
+
+local KnownTypes = {}     -- all NPC types ever discovered
+local SelectedTypes = {}  -- persistent user selections
+
+local function rebuildDropdown()
+    scroll:ClearAllChildren()
+    local newLayout = Instance.new("UIListLayout", scroll)
+
+    for name,_ in pairs(KnownTypes) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, -10, 0, 25)
+        btn.Text = name
+        btn.TextScaled = true
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.BackgroundColor3 = SelectedTypes[name] and Color3.fromRGB(0,120,0) or Color3.fromRGB(60,60,60)
+        btn.Parent = scroll
+
+        btn.MouseButton1Click:Connect(function()
+            if SelectedTypes[name] then
+                SelectedTypes[name] = nil
+                btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+            else
+                SelectedTypes[name] = true
+                btn.BackgroundColor3 = Color3.fromRGB(0,120,0)
+            end
+        end)
+    end
+
+    scroll.CanvasSize = UDim2.new(0,0,0,newLayout.AbsoluteContentSize.Y + 10)
+end
+
+local function updateTypes()
+    for _, v in ipairs(CharacterFolder:GetChildren()) do
+        if v:IsA("Model") and not Players:FindFirstChild(v.Name) then
+            if not KnownTypes[v.Name] then
+                KnownTypes[v.Name] = true
+                rebuildDropdown()
+            end
+        end
+    end
+end
+
+updateTypes()
+CharacterFolder.ChildAdded:Connect(function()
+    task.wait(0.1)
+    updateTypes()
+end)
+
+------------------------------------------------------------
+-- AUTOFARM LOGIC (Single Target)
+------------------------------------------------------------
+local farming = false
+local currentTarget = nil
+
+local function pickTarget()
+    local list = {}
+    for _, model in ipairs(CharacterFolder:GetChildren()) do
+        if model:IsA("Model")
+        and SelectedTypes[model.Name]
+        and not Players:FindFirstChild(model.Name) then
+            table.insert(list, model)
+        end
+    end
+    if #list == 0 then return nil end
+    return list[math.random(1,#list)]
+end
+
+local function farmLoop()
+    while farming do
+        task.wait(0.1)
+
+        if not currentTarget then
+            currentTarget = pickTarget()
+            continue
+        end
+
+        if not currentTarget.Parent then
+            currentTarget = pickTarget()
+            continue
+        end
+
+        local hrp = currentTarget:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            currentTarget = pickTarget()
+            continue
+        end
+
+        local myChar = LocalPlayer.Character
+        local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        if not myHRP then continue end
+
+        local goal = { CFrame = hrp.CFrame * CFrame.new(0, 7, 0) }
+        TweenService:Create(myHRP, TweenInfo.new(0.3), goal):Play()
+
+        if LocalPlayer:FindFirstChild("AttackRemote") then
+            LocalPlayer.AttackRemote:FireServer(currentTarget)
+        end
+    end
+end
+
+------------------------------------------------------------
+-- TOGGLE BUTTON
+------------------------------------------------------------
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(1, -20, 0, 35)
+toggle.Position = UDim2.new(0, 10, 0, 210)
+toggle.BackgroundColor3 = Color3.fromRGB(0,80,0)
+toggle.TextColor3 = Color3.fromRGB(255,255,255)
+toggle.Text = "Start Autofarm"
+toggle.TextScaled = true
+toggle.Parent = frame
+
+toggle.MouseButton1Click:Connect(function()
+    farming = not farming
+
+    if farming then
+        toggle.Text = "Stop Autofarm"
+        toggle.BackgroundColor3 = Color3.fromRGB(0,150,0)
+        currentTarget = nil
+        task.spawn(farmLoop)
+    else
+        toggle.Text = "Start Autofarm"
+        toggle.BackgroundColor3 = Color3.fromRGB(0,80,0)
+        currentTarget = nil
+    end
+end)
+
+
+end)
+
+TeleportsSection2:NewButton("Teleport to player UI", "Teleports you to other players", function()
+    --[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+-- Services
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local teleportTarget = nil
+
+-- Create GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.CoreGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 250, 0, 300)
+Frame.Position = UDim2.new(0.5, -125, 0.4, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.BorderSizePixel = 2
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.Text = "Player Teleport GUI"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.Parent = Frame
+
+-- Scrolling list
+local ScrollingFrame = Instance.new("ScrollingFrame")
+ScrollingFrame.Size = UDim2.new(1, -10, 1, -70)
+ScrollingFrame.Position = UDim2.new(0, 5, 0, 35)
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 5, 0)
+ScrollingFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+ScrollingFrame.Parent = Frame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = ScrollingFrame
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- TP Button
+local TPButton = Instance.new("TextButton")
+TPButton.Size = UDim2.new(1, -10, 0, 30)
+TPButton.Position = UDim2.new(0, 5, 1, -35)
+TPButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+TPButton.Text = "Teleport"
+TPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+TPButton.Font = Enum.Font.GothamBold
+TPButton.TextSize = 14
+TPButton.Parent = Frame
+
+-- Update player list function
+local function updatePlayerList()
+    for _, child in pairs(ScrollingFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local PlayerButton = Instance.new("TextButton")
+            PlayerButton.Size = UDim2.new(1, 0, 0, 25)
+            PlayerButton.Text = player.Name
+            PlayerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            PlayerButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            PlayerButton.Font = Enum.Font.Gotham
+            PlayerButton.TextSize = 12
+            PlayerButton.Parent = ScrollingFrame
+            
+            PlayerButton.MouseButton1Click:Connect(function()
+                teleportTarget = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                TPButton.Text = "Teleport to: " .. player.Name
+            end)
+        end
+    end
+end
+
+-- Teleport function
+TPButton.MouseButton1Click:Connect(function()
+    if teleportTarget then
+        LocalPlayer.Character:FindFirstChild("HumanoidRootPart").CFrame = teleportTarget.CFrame + Vector3.new(0, 3, 0)
+    end
+end)
+
+-- Update list on player join/leave
+Players.PlayerAdded:Connect(updatePlayerList)
+Players.PlayerRemoving:Connect(updatePlayerList)
+updatePlayerList()
+
+-- Dragging the GUI
+local dragging, dragInput, dragStart, startPos
+Title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = Frame.Position
+    end
+end)
+
+Title.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+Title.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
 end)
 
 PlayerSection:NewButton("Infinite Jump", "Lets you jump infnite times", function()
@@ -364,10 +729,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
- 
-    PlayerSection:NewSlider("Jumppower", "Changes the jumppower", 250, 50, function(v)
-        game.Players.LocalPlayer.Character.Humanoid.JumpPower = v
-    end)
 
     TeleportsSection:NewButton("Danger Zone", "Teleports you to Danger Zone", function()
    local player = game.Players.LocalPlayer
