@@ -1,0 +1,300 @@
+local player = game.Players.LocalPlayer
+
+-- State variables
+local hasAttackedFirstTime = false
+local isCombatActive = false
+local combatRound = 0
+
+-- Function to check countdown
+local function getCountdownText()
+    local success, text = pcall(function()
+        return player.PlayerGui.MatchmakingHud.Countdown.ScrollFrame.Center.Countdown.Text
+    end)
+    return success and text or ""
+end
+
+-- Function to check if it's fight time
+local function isFightTime()
+    local text = getCountdownText()
+    local cleanText = text:gsub("%s+", ""):gsub("%c+", ""):lower()
+    return cleanText == "fight" or cleanText:find("fight")
+end
+
+-- Function to check HP below 80
+local function isHpBelow80()
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            local currentHp = humanoid.Health
+            local maxHp = humanoid.MaxHealth
+            local hpPercent = (currentHp / maxHp) * 100
+            return hpPercent < 80
+        end
+    end
+    return false
+end
+
+-- Function to get current HP percentage
+local function getHpPercent()
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            local currentHp = humanoid.Health
+            local maxHp = humanoid.MaxHealth
+            return (currentHp / maxHp) * 100
+        end
+    end
+    return 100
+end
+
+-- Function to check if score is 0-3
+local function isScoreZeroThree()
+    local attackText = player.PlayerGui.MatchmakingHud.Overhead.TopBar.AttackPoints.Text:gsub("%s+", ""):gsub("%c+", "")
+    local defenText = player.PlayerGui.MatchmakingHud.Overhead.TopBar.DefenPoints.Text:gsub("%s+", ""):gsub("%c+", "")
+    
+    -- Check for 0-3 pattern
+    if attackText == "0" and defenText == "3" then
+        return true
+    end
+    
+    -- Try to parse numbers
+    local attackScore = tonumber(attackText)
+    local defenScore = tonumber(defenText)
+    
+    if attackScore and defenScore then
+        return attackScore == 0 and defenScore == 3
+    end
+    
+    return false
+end
+
+-- Function to get scores
+local function getScores()
+    local attackText = player.PlayerGui.MatchmakingHud.Overhead.TopBar.AttackPoints.Text:gsub("%s+", ""):gsub("%c+", "")
+    local defenText = player.PlayerGui.MatchmakingHud.Overhead.TopBar.DefenPoints.Text:gsub("%s+", ""):gsub("%c+", "")
+    return attackText, defenText
+end
+
+-- Function to equip weapon
+local function equipWeapon()
+    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.One, false, nil)
+    task.wait(0.05)
+    game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.One, false, nil)
+end
+
+-- Function to find closest enemy player
+local function findClosestEnemy()
+    local character = player.Character
+    if not character then return nil end
+    
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    local closestPlayer = nil
+    local closestDistance = math.huge
+    
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            local targetHRP = p.Character:FindFirstChild("HumanoidRootPart")
+            if targetHRP then
+                local distance = (hrp.Position - targetHRP.Position).Magnitude
+                if distance < closestDistance then
+                    closestDistance = distance
+                    closestPlayer = p
+                end
+            end
+        end
+    end
+    
+    return closestPlayer
+end
+
+-- Function to fly to player
+local function flyToEnemy(target)
+    if not target or not target.Character then return false end
+    
+    local character = player.Character
+    if not character then return false end
+    
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChild("Humanoid")
+    local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+    
+    if not hrp or not humanoid or not targetHRP then return false end
+    
+    print("Flying to: " .. target.Name)
+    
+    -- Enable flight physics
+    humanoid.PlatformStand = true
+    local BodyVelocity = Instance.new("BodyVelocity")
+    BodyVelocity.MaxForce = Vector3.new(1, 1, 1) * 1e9
+    BodyVelocity.Velocity = Vector3.zero
+    BodyVelocity.Parent = hrp
+    
+    -- Calculate destination (2 studs in front of target)
+    local destination = targetHRP.Position + (targetHRP.CFrame.LookVector * 2)
+    
+    -- Fly to player
+    repeat
+        local dir = (destination - hrp.Position).Unit
+        BodyVelocity.Velocity = dir * 55
+        task.wait()
+    until (hrp.Position - destination).Magnitude <= 5
+    
+    BodyVelocity.Velocity = Vector3.zero
+    
+    -- Face the enemy
+    hrp.CFrame = CFrame.new(hrp.Position, targetHRP.Position)
+    
+    -- Clean up flight physics
+    if BodyVelocity then 
+        BodyVelocity:Destroy() 
+    end
+    humanoid.PlatformStand = false
+    
+    return true
+end
+
+-- Function to attack until enemy is dead
+local function attackUntilDead(target)
+    if not target or not target.Character then return false end
+    
+    print("Attacking " .. target.Name .. " until dead...")
+    local attackCount = 0
+    
+    while target and target.Character and task.wait(0.666) do -- 1.5 attacks per second
+        -- Check if enemy is dead
+        local enemyHumanoid = target.Character:FindFirstChild("Humanoid")
+        if not enemyHumanoid or enemyHumanoid.Health <= 0 then
+            print("✅ " .. target.Name .. " is DEAD!")
+            return true
+        end
+        
+        -- Keep facing the enemy
+        local character = player.Character
+        local targetChar = target.Character
+        if character and targetChar then
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+            if hrp and targetHRP then
+                hrp.CFrame = CFrame.new(hrp.Position, targetHRP.Position)
+            end
+        end
+        
+        -- Click attack
+        mouse1click()
+        attackCount = attackCount + 1
+        
+        -- Check distance every 5 attacks
+        if attackCount % 5 == 0 then
+            local char = player.Character
+            local enemyChar = target.Character
+            if char and enemyChar then
+                local myHRP = char:FindFirstChild("HumanoidRootPart")
+                local enemyHRP = enemyChar:FindFirstChild("HumanoidRootPart")
+                if myHRP and enemyHRP then
+                    local distance = (myHRP.Position - enemyHRP.Position).Magnitude
+                    if distance > 8 then
+                        print("Too far, repositioning...")
+                        flyToEnemy(target)
+                    end
+                end
+            end
+        end
+    end
+    
+    return false
+end
+
+-- Main combat function
+local function executeCombat()
+    print("⚔️ Combat Round: " .. combatRound)
+    
+    -- Equip weapon
+    equipWeapon()
+    task.wait(0.5)
+    
+    -- Find enemy
+    local enemy = findClosestEnemy()
+    if enemy then
+        -- Fly to enemy
+        if flyToEnemy(enemy) then
+            task.wait(0.3)
+            -- Attack until dead
+            attackUntilDead(enemy)
+            combatRound = combatRound + 1
+            print("✅ Round " .. combatRound .. " completed!")
+        else
+            print("❌ Failed to reach enemy")
+        end
+    else
+        print("❌ No enemies found")
+    end
+end
+
+-- Main monitoring loop
+print("🛡️ Auto-Combat Script Active!")
+print("Phase 1: Attack when HP < 80% (First Time)")
+print("Phase 2: Fight every 'Fight' countdown until score is 0-3")
+print("--------------------------------------------------------")
+
+local lastFightState = false
+local lastHpCheck = 0
+
+while true do
+    task.wait(0.3)
+    
+    local currentText = getCountdownText()
+    local isFightNow = isFightTime()
+    local hpPercent = getHpPercent()
+    local attackScore, defenScore = getScores()
+    
+    -- PHASE 1: First time attack when HP < 80%
+    if not hasAttackedFirstTime and isHpBelow80() then
+        print("🚨 FIRST ATTACK: HP below 80% (" .. hpPercent .. "%)")
+        hasAttackedFirstTime = true
+        isCombatActive = true
+        
+        task.spawn(function()
+            executeCombat()
+            print("First attack completed. Waiting for 'Fight' countdowns...")
+        end)
+    end
+    
+    -- PHASE 2: Check for 'Fight' countdown after first attack
+    if hasAttackedFirstTime and not isScoreZeroThree() then
+        -- Check for fight state change
+        if isFightNow and not lastFightState and not isCombatActive then
+            print("🔔 FIGHT COUNTDOWN: '" .. currentText .. "' | Score: " .. attackScore .. "-" .. defenScore)
+            isCombatActive = true
+            
+            task.spawn(function()
+                executeCombat()
+                isCombatActive = false
+            end)
+        end
+        
+        -- Check if fight ended
+        if not isFightNow and lastFightState then
+            isCombatActive = false
+        end
+    end
+    
+    -- Check if we should stop (score is 0-3)
+    if isScoreZeroThree() then
+        print("⏹️ STOPPING: Score reached 0-3")
+        break  -- Exit the main loop
+    end
+    
+    lastFightState = isFightNow
+    
+    -- Print status every 3 seconds
+    if tick() - lastHpCheck > 3 then
+        print("Status: HP " .. hpPercent .. "% | Score: " .. attackScore .. "-" .. defenScore .. " | Fight: " .. (isFightNow and "YES" or "NO") .. " | First Attack: " .. (hasAttackedFirstTime and "DONE" or "WAITING"))
+        lastHpCheck = tick()
+    end
+end
+
+print("🎯 Script finished: Match complete (0-3 score reached)")
