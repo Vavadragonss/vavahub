@@ -1,0 +1,104 @@
+local player = game.Players.LocalPlayer
+local hasExecuted = false
+
+-- Function to check countdown
+local function getCountdownText()
+    local success, text = pcall(function()
+        return player.PlayerGui.MatchmakingHud.Countdown.ScrollFrame.Center.Countdown.Text
+    end)
+    return success and text or ""
+end
+
+-- Function to check if it's fight time
+local function isFightTime()
+    local text = getCountdownText()
+    local cleanText = text:gsub("%s+", ""):gsub("%c+", ""):lower()
+    return cleanText == "fight" or cleanText:find("fight")
+end
+
+-- Your combat function
+local function executeCombat()
+    print("✅ COUNTDOWN SAYS 'FIGHT'! Starting combat...")
+    
+    -- Wait for score to be 0-0
+    while task.wait(0.5) do
+        local a = player.PlayerGui.MatchmakingHud.Overhead.TopBar.AttackPoints.Text:gsub("%s+", "")
+        local d = player.PlayerGui.MatchmakingHud.Overhead.TopBar.DefenPoints.Text:gsub("%s+", "")
+        
+        if a == "0" and d == "0" then
+            print("Score is 0-0! Executing...")
+            
+            -- Equip weapon
+            game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.One, false, nil)
+            task.wait(0.05)
+            game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.One, false, nil)
+            task.wait(1)
+            
+            local character = player.Character
+            if character then
+                local hrp = character:WaitForChild("HumanoidRootPart")
+                local humanoid = character:WaitForChild("Humanoid")
+                
+                -- Find closest player
+                local target
+                for _, p in pairs(game.Players:GetPlayers()) do
+                    if p ~= player and p.Character then
+                        target = p
+                        break
+                    end
+                end
+                
+                if target and target.Character then
+                    local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                    if targetHRP then
+                        print("Found target: " .. target.Name)
+                        
+                        -- Fly to player
+                        humanoid.PlatformStand = true
+                        local BodyVelocity = Instance.new("BodyVelocity")
+                        BodyVelocity.MaxForce = Vector3.new(1, 1, 1) * 1e9
+                        BodyVelocity.Velocity = Vector3.zero
+                        BodyVelocity.Parent = hrp
+                        
+                        local destination = targetHRP.Position + (targetHRP.CFrame.LookVector * 2)
+                        
+                        repeat
+                            local dir = (destination - hrp.Position).Unit
+                            BodyVelocity.Velocity = dir * 55
+                            task.wait()
+                        until (hrp.Position - destination).Magnitude <= 5
+                        
+                        BodyVelocity.Velocity = Vector3.zero
+                        hrp.CFrame = CFrame.new(hrp.Position, targetHRP.Position)
+                        
+                        if BodyVelocity then BodyVelocity:Destroy() end
+                        humanoid.PlatformStand = false
+                        
+                        task.wait(0.2)
+                        mouse1click()
+                        
+                        print("✅ Combat completed!")
+                        return true
+                    end
+                end
+            end
+            break
+        end
+    end
+    return false
+end
+
+-- Main loop
+print("Waiting for countdown to say 'Fight'...")
+while task.wait(0.5) do
+    local currentText = getCountdownText()
+    
+    if isFightTime() and not hasExecuted then
+        hasExecuted = executeCombat()
+    elseif not isFightTime() and hasExecuted then
+        hasExecuted = false
+        print("Ready for next 'Fight'")
+    else
+        print("Current: '" .. currentText .. "'")
+    end
+end
